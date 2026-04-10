@@ -1,0 +1,3 @@
+# this file is empty
+# this would list dependencies and python packages that the lambda function relies on
+# appropriate for complex programs, but best practice to include
