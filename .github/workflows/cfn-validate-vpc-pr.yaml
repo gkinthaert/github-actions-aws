@@ -1,0 +1,73 @@
+name: Validate CloudFormation template for VPC on PR
+
+on:
+  pull_request:  # event/trigger
+    types: [opened, synchronize, reopened, closed] ## added closed so cleanup job will trigger on merge
+    paths:
+      - 'cloudformation/**'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  validate-cfn: 
+    runs-on: ubuntu-latest # runner
+    if: github.event.pull_request.merged == false ## skips validate/deploy job when PR is merged/closed
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: Validate Cloudformation template
+        run:  |
+          aws cloudformation validate-template --template-body file://cloudformation/vpc.yaml
+
+      - name: Deploy our stack ## switch to deplay instead of create-stack to handle both create and update
+        run:  |
+          stack_name="pr-test-stack-${{ github.event.pull_request.number }}"
+          aws cloudformation deploy --stack-name $stack_name --template-file cloudformation/vpc.yaml --parameter-overrides Environment=test
+
+      - name: Wait for stack to be ready ## stack needs to be fully deployed before commenting
+        run:  |
+          stack_name="pr-test-stack-${{ github.event.pull_request.number }}"
+          aws cloudformation wait stack-create-complete --stack-name $stack_name || aws cloudformation wait stack-update-complete --stack-name $stack_name
+
+      - name: Comment on the PR
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Cloudformation vpc test stack deployed. Stack name: pr-test-stack-${{ github.event.pull_request.number}}'
+            })
+
+  cleanup-on-merge:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true ## now works because closed type is explicit
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: Delete test stack
+        run:  |
+          stack_name="pr-test-stack-${{ github.event.pull_request.number }}"
+          aws cloudformation delete-stack --stack-name $stack_name
+
+      - name: Wait for stack deletion to complete
+        run:  |
+          stack_name="pr-test-stack-${{ github.event.pull_request.number }}"
+          aws cloudformation wait stack-delete-complete --stack-name $stack_name
+ 

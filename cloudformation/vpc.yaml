@@ -94,8 +94,11 @@ Resources:
       Tags:
       - Key: Name
         Value: MyVPC-IGW
+<<<<<<< HEAD
       - Key: Environment
         Value: test
+=======
+>>>>>>> 77f23de578d39bb0948fc5a66d29697e790418ad
 
 # Attach Gateway
   AttachGateway:
@@ -136,8 +139,95 @@ Resources:
       SubnetId: !Ref PublicSubnet2B
       RouteTableId: !Ref PublicRouteTable
     
+<<<<<<< HEAD
+=======
+# Bastion Host EC2
+  BastionHost:
+    Type: 'AWS::EC2::Instance'    
+    Properties:
+      InstanceType: t3.micro
+      KeyName: Bastion
+      ImageId: ami-03ea746da1a2e36e7
+      SubnetId: !Ref PublicSubnet1A
+      SecurityGroupIds:
+        - !Ref BastionSG
+      Tags:
+        - Key: Name
+          Value: BastionHost
+
+# Bastion Security Group
+  BastionSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Enable SSH access'
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 71.233.43.155/32
+
+# AppInstance1A
+  AppInstance1A:
+    Type: 'AWS::EC2::Instance'  
+    Properties:
+      InstanceType: t3.micro
+      KeyName: Bastion
+      ImageId: ami-03ea746da1a2e36e7
+      SubnetId: !Ref AppPrivateSubnet1A
+      SecurityGroupIds:
+        - !Ref AppInstance1ASG
+      Tags:
+        - Key: Name
+          Value: App1
+
+
+# AppInstance2B
+  AppInstance2B:
+    Type: 'AWS::EC2::Instance'  
+    Properties:
+      InstanceType: t3.micro
+      KeyName: Bastion
+      ImageId: ami-03ea746da1a2e36e7
+      SubnetId: !Ref AppPrivateSubnet2B
+      SecurityGroupIds:
+        - !Ref AppInstance2BSG
+      Tags:
+        - Key: Name
+          Value: App2          
+
+#SG App 1A
+  AppInstance1ASG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Allow SSH from Bastion'
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionSG
+
+#SG App 2B
+  AppInstance2BSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Allow ICMP Ping from App 1'
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          SourceSecurityGroupId: !Ref AppInstance1ASG
+        
+
+>>>>>>> 77f23de578d39bb0948fc5a66d29697e790418ad
 Outputs:
   MyVPC:
     Description: "Name of VPC that was created"
     Value: !Ref MyVPC
+<<<<<<< HEAD
        git s
+=======
+       
+>>>>>>> 77f23de578d39bb0948fc5a66d29697e790418ad
