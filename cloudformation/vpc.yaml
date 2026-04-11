@@ -94,6 +94,8 @@ Resources:
       Tags:
       - Key: Name
         Value: MyVPC-IGW
+      - Key: Environment
+        Value: test
 
 # Attach Gateway
   AttachGateway:
